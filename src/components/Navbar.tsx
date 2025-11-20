@@ -1,13 +1,23 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
-import { Briefcase } from "lucide-react";
+import { Briefcase, LogOut } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, logout, user } = useAuth();
 
   const handlePostService = () => {
-    // For now, redirect to signup. In production, check auth state
-    navigate("/signup");
+    if (!isAuthenticated) {
+      navigate("/signup");
+    } else {
+      navigate("/post-task");
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
   };
 
   return (
@@ -28,26 +38,50 @@ const Navbar = () => {
             </Link>
             
             <div className="flex items-center gap-3">
-              <Button 
-                variant="ghost" 
-                onClick={() => navigate("/login")}
-                className="hover:bg-primary/10"
-              >
-                Login
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => navigate("/signup")}
-                className="border-primary/20 hover:bg-primary/10"
-              >
-                Sign Up
-              </Button>
-              <Button 
-                onClick={handlePostService}
-                className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white"
-              >
-                Post a Service
-              </Button>
+              {isAuthenticated ? (
+                <>
+                  <span className="text-sm text-muted-foreground">
+                    Welcome, {user?.fullName}
+                  </span>
+                  <Button 
+                    onClick={handlePostService}
+                    className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white"
+                  >
+                    Post a Service
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={handleLogout}
+                    className="border-primary/20 hover:bg-primary/10"
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => navigate("/login")}
+                    className="hover:bg-primary/10"
+                  >
+                    Login
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => navigate("/signup")}
+                    className="border-primary/20 hover:bg-primary/10"
+                  >
+                    Sign Up
+                  </Button>
+                  <Button 
+                    onClick={handlePostService}
+                    className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white"
+                  >
+                    Post a Service
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
