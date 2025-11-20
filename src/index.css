@@ -125,6 +125,41 @@ All colors MUST be HSL.
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
   }
+
+  .glass-nav {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    background: linear-gradient(135deg, hsla(0, 0%, 100%, 0.25), hsla(0, 0%, 100%, 0.08)), hsla(0, 0%, 100%, 0.25);
+    border: 1px solid hsla(0, 0%, 100%, 0.35);
+    box-shadow: 0 25px 70px hsla(185, 85%, 35%, 0.25);
+    backdrop-filter: blur(28px) saturate(180%);
+  }
+
+  .glass-nav::before,
+  .glass-nav::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .glass-nav::before {
+    inset: -25%;
+    background: radial-gradient(circle at 20% 20%, hsla(0, 0%, 100%, 0.75), transparent 60%);
+    opacity: 0.45;
+  }
+
+  .glass-nav::after {
+    top: -65%;
+    left: -25%;
+    width: 70%;
+    height: 230%;
+    background: linear-gradient(120deg, hsla(0, 0%, 100%, 0.85), hsla(0, 0%, 100%, 0));
+    transform: rotate(16deg);
+    opacity: 0.3;
+    filter: blur(2px);
+  }
   
   .hover-scale {
     @apply transition-all duration-300 hover:scale-105;

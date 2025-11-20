@@ -4,9 +4,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, Briefcase, DollarSign, Star, Target, Eye, Heart, Award, Zap, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import bhavdeepImage from "@/assets/team-bhavdeep.jpg";
-import shlaishaImage from "@/assets/team-shlaisha.jpg";
-import adityaImage from "@/assets/team-aditya.jpg";
+import bhavdeepImage from "@/assets/bhv.jpg";
+import shlaishaImage from "@/assets/shl.jpg";
+import adityaImage from "@/assets/adi2.png";
 
 const About = () => {
   const navigate = useNavigate();

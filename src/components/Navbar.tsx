@@ -12,7 +12,7 @@ const Navbar = () => {
 
   return (
     <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-7xl">
-      <div className="glass-card px-6 py-4">
+      <div className="glass-card glass-nav px-6 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 group">
             <Briefcase className="h-6 w-6 text-primary transition-transform group-hover:scale-110" />
