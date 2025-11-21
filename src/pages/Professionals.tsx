@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Card, CardContent } from '@/components/ui/card';
@@ -112,8 +113,16 @@ const mockProfessionals: Professional[] = [
 const categories = ['All', 'Web Development', 'Video Editing', 'Tutoring', 'Software Development', 'Content Writing'];
 
 const Professionals = () => {
+  const [searchParams] = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedProfessional, setSelectedProfessional] = useState<Professional | null>(null);
+
+  useEffect(() => {
+    const category = searchParams.get('category');
+    if (category && categories.includes(category)) {
+      setSelectedCategory(category);
+    }
+  }, [searchParams]);
 
   const filteredProfessionals = selectedCategory === 'All' 
     ? mockProfessionals 

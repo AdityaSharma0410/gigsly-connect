@@ -44,6 +44,20 @@ const Navbar = () => {
                     Welcome, {user?.fullName}
                   </span>
                   <Button 
+                    onClick={() => navigate("/find-work")}
+                    variant="ghost"
+                    className="hover:bg-primary/10"
+                  >
+                    Find Work
+                  </Button>
+                  <Button 
+                    onClick={() => navigate("/give-feedback")}
+                    variant="ghost"
+                    className="hover:bg-primary/10"
+                  >
+                    Give Feedback
+                  </Button>
+                  <Button 
                     onClick={handlePostService}
                     className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white"
                   >
