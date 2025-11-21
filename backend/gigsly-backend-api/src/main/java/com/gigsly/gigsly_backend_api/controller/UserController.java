@@ -1,5 +1,6 @@
 package com.gigsly.gigsly_backend_api.controller;
 
+import com.gigsly.gigsly_backend_api.dto.user.ProfessionalProfileRequest;
 import com.gigsly.gigsly_backend_api.dto.user.UserRequest;
 import com.gigsly.gigsly_backend_api.dto.user.UserResponse;
 import com.gigsly.gigsly_backend_api.model.UserRole;
@@ -10,6 +11,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -42,6 +44,16 @@ public class UserController {
     @GetMapping
     public List<UserResponse> listUsers(@RequestParam(value = "role", required = false) UserRole role) {
         return userService.getUsers(role);
+    }
+
+    @GetMapping("/me")
+    public UserResponse getMe() {
+        return userService.getCurrentUserProfile();
+    }
+
+    @PutMapping("/me/profile")
+    public UserResponse updateProfile(@Valid @RequestBody ProfessionalProfileRequest request) {
+        return userService.updateProfessionalProfile(request);
     }
 }
 

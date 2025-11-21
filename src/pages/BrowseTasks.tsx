@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,120 +10,105 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Calendar, DollarSign, Briefcase } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-interface Task {
-  id: string;
-  title: string;
-  category: string;
-  budget: number;
-  deadline: string;
-  description: string;
-  clientName: string;
-  proposalsCount: number;
-}
-
-const mockTasks: Task[] = [
-  {
-    id: '1',
-    title: 'Build a Modern E-commerce Website',
-    category: 'Web Development',
-    budget: 50000,
-    deadline: '2024-02-15',
-    description: 'Looking for an experienced web developer to create a fully functional e-commerce website with payment gateway integration.',
-    clientName: 'Ananya Gupta',
-    proposalsCount: 12,
-  },
-  {
-    id: '2',
-    title: 'Edit Wedding Highlight Video',
-    category: 'Video Editing',
-    budget: 15000,
-    deadline: '2024-01-25',
-    description: 'Need a professional video editor to create a 5-minute wedding highlight video with music and color grading.',
-    clientName: 'Karan Singh',
-    proposalsCount: 8,
-  },
-  {
-    id: '3',
-    title: 'JEE Mathematics Tutoring',
-    category: 'Tutoring',
-    budget: 8000,
-    deadline: '2024-01-30',
-    description: 'Looking for an experienced tutor for JEE Advanced mathematics preparation. 3 sessions per week.',
-    clientName: 'Meera Patel',
-    proposalsCount: 15,
-  },
-  {
-    id: '4',
-    title: 'Develop Mobile App Backend',
-    category: 'Software Development',
-    budget: 75000,
-    deadline: '2024-03-01',
-    description: 'Need a backend developer to create REST APIs for a mobile application using Node.js and MongoDB.',
-    clientName: 'Rahul Sharma',
-    proposalsCount: 20,
-  },
-  {
-    id: '5',
-    title: 'Write SEO Blog Articles',
-    category: 'Content Writing',
-    budget: 12000,
-    deadline: '2024-02-10',
-    description: 'Looking for a content writer to create 10 SEO-optimized blog articles for our tech startup.',
-    clientName: 'Deepa Krishnan',
-    proposalsCount: 25,
-  },
-];
-
-const categories = ['All', 'Web Development', 'Video Editing', 'Tutoring', 'Software Development', 'Content Writing'];
+import { useQuery } from '@tanstack/react-query';
+import api from '@/lib/api';
+import type { TaskResponse } from '@/types/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 const BrowseTasks = () => {
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const [selectedTask, setSelectedTask] = useState<TaskResponse | null>(null);
   const [proposalMessage, setProposalMessage] = useState('');
   const [proposedAmount, setProposedAmount] = useState('');
   const [estimatedDuration, setEstimatedDuration] = useState('');
-  const { toast } = useToast();
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const filteredTasks = selectedCategory === 'All' 
-    ? mockTasks 
-    : mockTasks.filter(t => t.category === selectedCategory);
+  const { data: tasks } = useQuery({
+    queryKey: ['tasks', 'OPEN'],
+    queryFn: async () => {
+      const { data } = await api.get<TaskResponse[]>('/tasks', { params: { status: 'OPEN' } });
+      return data;
+    },
+  });
 
-  const handleApply = (task: Task) => {
+  const categories = useMemo(() => {
+    const unique = new Set<string>();
+    tasks?.forEach((task) => {
+      if (task.categoryName) unique.add(task.categoryName);
+    });
+    return ['All', ...Array.from(unique)];
+  }, [tasks]);
+
+  const filteredTasks = useMemo(() => {
+    if (!tasks) return [];
+    if (selectedCategory === 'All') return tasks;
+    return tasks.filter((task) => task.categoryName === selectedCategory);
+  }, [tasks, selectedCategory]);
+
+  const handleApply = (task: TaskResponse) => {
+    if (user?.role !== 'PROFESSIONAL') {
+      toast({
+        title: 'Professionals only',
+        description: 'Create a professional account to apply for tasks.',
+        variant: 'destructive',
+      });
+      return;
+    }
     setSelectedTask(task);
     setProposalMessage('');
     setProposedAmount('');
     setEstimatedDuration('');
   };
 
-  const handleSubmitProposal = () => {
+  const handleSubmitProposal = async () => {
+    if (!selectedTask) return;
     if (!proposalMessage || !proposedAmount || !estimatedDuration) {
       toast({
-        title: 'Error',
-        description: 'Please fill in all fields',
+        title: 'Missing details',
+        description: 'Please fill in all fields before submitting.',
         variant: 'destructive',
       });
       return;
     }
-
-    toast({
-      title: 'Proposal Submitted!',
-      description: `Your proposal for "${selectedTask?.title}" has been submitted successfully.`,
-    });
-    setSelectedTask(null);
+    setIsSubmitting(true);
+    try {
+      await api.post('/proposals', {
+        taskId: selectedTask.id,
+        message: proposalMessage,
+        proposedAmount: Number(proposedAmount),
+        estimatedDuration,
+      });
+      toast({
+        title: 'Proposal Submitted!',
+        description: `Your proposal for "${selectedTask.title}" has been sent.`,
+      });
+      setSelectedTask(null);
+    } catch (error) {
+      toast({
+        title: 'Submission failed',
+        description: error instanceof Error ? error.message : 'Please try again',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <section className="pt-32 pb-20 px-6">
+      <section className="flex-1 pt-32 pb-20 px-6">
         <div className="container mx-auto">
           <h1 className="text-4xl md:text-5xl font-bold text-center mb-4 animate-fade-in">
             Browse Available Tasks
           </h1>
           <p className="text-muted-foreground text-center mb-12 animate-fade-in">
-            Find projects that match your skills and start earning
+            {user?.role === 'PROFESSIONAL'
+              ? 'Find projects that match your skills and start earning'
+              : 'Switch to a professional account to apply for tasks'}
           </p>
 
           <div className="flex flex-wrap gap-3 justify-center mb-12 animate-scale-in">
@@ -149,10 +134,12 @@ const BrowseTasks = () => {
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
                       <h3 className="text-xl font-semibold mb-2">{task.title}</h3>
-                      <p className="text-sm text-muted-foreground mb-1">Posted by {task.clientName}</p>
-                      <Badge className="bg-primary/20 text-primary border-primary/30">
-                        {task.category}
-                      </Badge>
+                      <p className="text-sm text-muted-foreground mb-1">Posted by {task.clientName ?? 'Unknown Client'}</p>
+                      {task.categoryName && (
+                        <Badge className="bg-primary/20 text-primary border-primary/30">
+                          {task.categoryName}
+                        </Badge>
+                      )}
                     </div>
                   </div>
 
@@ -163,16 +150,22 @@ const BrowseTasks = () => {
                   <div className="flex flex-wrap gap-4 mb-4 text-sm">
                     <div className="flex items-center gap-2">
                       <DollarSign className="w-4 h-4 text-primary" />
-                      <span className="font-semibold">₹{task.budget.toLocaleString()}</span>
+                      <span className="font-semibold">
+                        ₹{(task.budgetMax ?? task.budgetMin ?? 0).toLocaleString()}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-primary" />
-                      <span>Due: {new Date(task.deadline).toLocaleDateString()}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Briefcase className="w-4 h-4 text-primary" />
-                      <span>{task.proposalsCount} proposals</span>
-                    </div>
+                    {task.deadline && (
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-primary" />
+                        <span>Due: {new Date(task.deadline).toLocaleDateString()}</span>
+                      </div>
+                    )}
+                    {task.estimatedDuration && (
+                      <div className="flex items-center gap-2">
+                        <Briefcase className="w-4 h-4 text-primary" />
+                        <span>{task.estimatedDuration}</span>
+                      </div>
+                    )}
                   </div>
 
                   <Button className="w-full" onClick={() => handleApply(task)}>
@@ -219,11 +212,10 @@ const BrowseTasks = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="duration">Estimated Duration (days)</Label>
+                <Label htmlFor="duration">Estimated Duration</Label>
                 <Input
                   id="duration"
-                  type="number"
-                  placeholder="7"
+                  placeholder="e.g., 7 days"
                   value={estimatedDuration}
                   onChange={(e) => setEstimatedDuration(e.target.value)}
                 />
@@ -235,14 +227,16 @@ const BrowseTasks = () => {
                 variant="outline" 
                 className="flex-1"
                 onClick={() => setSelectedTask(null)}
+                disabled={isSubmitting}
               >
                 Cancel
               </Button>
               <Button 
                 className="flex-1"
                 onClick={handleSubmitProposal}
+                disabled={isSubmitting}
               >
-                Submit Proposal
+                {isSubmitting ? 'Submitting...' : 'Submit Proposal'}
               </Button>
             </div>
           </div>

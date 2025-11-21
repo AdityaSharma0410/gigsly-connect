@@ -1,18 +1,54 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
-import { Briefcase, LogOut } from "lucide-react";
+import { Briefcase, LogOut, UserCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const Navbar = () => {
   const navigate = useNavigate();
   const { isAuthenticated, logout, user } = useAuth();
+  const { toast } = useToast();
+
+  const ensureClient = () => {
+    if (!user || user.role === "ADMIN" || user.role === "CLIENT") {
+      return true;
+    }
+    toast({
+      title: "Clients only",
+      description: "Switch to a client account to post new tasks.",
+      variant: "destructive",
+    });
+    return false;
+  };
+
+  const ensureProfessional = () => {
+    if (user?.role === "PROFESSIONAL") {
+      return true;
+    }
+    toast({
+      title: "Professionals only",
+      description: "Create a professional account to browse and apply for tasks.",
+      variant: "destructive",
+    });
+    return false;
+  };
 
   const handlePostService = () => {
     if (!isAuthenticated) {
-      navigate("/signup");
-    } else {
-      navigate("/post-task");
+      navigate("/login");
+      return;
     }
+    if (!ensureClient()) return;
+    navigate("/post-task");
+  };
+
+  const handleFindWork = () => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+    if (!ensureProfessional()) return;
+    navigate("/find-work");
   };
 
   const handleLogout = () => {
@@ -40,29 +76,54 @@ const Navbar = () => {
             <div className="flex items-center gap-3">
               {isAuthenticated ? (
                 <>
-                  <span className="text-sm text-muted-foreground">
-                    Welcome, {user?.fullName}
-                  </span>
-                  <Button 
-                    onClick={() => navigate("/find-work")}
-                    variant="ghost"
-                    className="hover:bg-primary/10"
-                  >
-                    Find Work
-                  </Button>
-                  <Button 
-                    onClick={() => navigate("/give-feedback")}
-                    variant="ghost"
-                    className="hover:bg-primary/10"
-                  >
-                    Give Feedback
-                  </Button>
-                  <Button 
-                    onClick={handlePostService}
-                    className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white"
-                  >
-                    Post a Service
-                  </Button>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <UserCircle className="h-4 w-4 text-primary" />
+                    <span>{user?.fullName}</span>
+                  </div>
+                  {user?.role === "CLIENT" && (
+                    <Button
+                      variant="ghost"
+                      onClick={() => navigate("/dashboard/tasks")}
+                      className="hover:bg-primary/10"
+                    >
+                      My Tasks
+                    </Button>
+                  )}
+                  {user?.role === "PROFESSIONAL" && (
+                    <Button 
+                      onClick={handleFindWork}
+                      variant="ghost"
+                      className="hover:bg-primary/10"
+                    >
+                      Find Work
+                    </Button>
+                  )}
+                  {user?.role === "PROFESSIONAL" && (
+                    <Button
+                      variant="ghost"
+                      onClick={() => navigate("/dashboard/proposals")}
+                      className="hover:bg-primary/10"
+                    >
+                      My Proposals
+                    </Button>
+                  )}
+                  {(user?.role === "CLIENT" || user?.role === "ADMIN") && (
+                    <Button 
+                      onClick={handlePostService}
+                      className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white"
+                    >
+                      Post a Task
+                    </Button>
+                  )}
+                  {user?.role === "PROFESSIONAL" && (
+                    <Button
+                      variant="ghost"
+                      onClick={() => navigate("/create-profile")}
+                      className="hover:bg-primary/10"
+                    >
+                      Update Profile
+                    </Button>
+                  )}
                   <Button 
                     variant="outline"
                     onClick={handleLogout}
@@ -92,7 +153,7 @@ const Navbar = () => {
                     onClick={handlePostService}
                     className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white"
                   >
-                    Post a Service
+                    Post a Task
                   </Button>
                 </>
               )}

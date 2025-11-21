@@ -2,7 +2,9 @@ package com.gigsly.gigsly_backend_api.dto.user;
 
 import com.gigsly.gigsly_backend_api.model.UserRole;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class UserResponse {
     private Long id;
@@ -14,6 +16,13 @@ public class UserResponse {
     private Boolean active;
     private String bio;
     private String profilePictureUrl;
+    private String primaryCategory;
+    private List<String> skills;
+    private BigDecimal hourlyRate;
+    private String location;
+    private Double averageRating;
+    private Integer reviewCount;
+    private Long completedProjects;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -87,6 +96,62 @@ public class UserResponse {
 
     public void setProfilePictureUrl(String profilePictureUrl) {
         this.profilePictureUrl = profilePictureUrl;
+    }
+
+    public String getPrimaryCategory() {
+        return primaryCategory;
+    }
+
+    public void setPrimaryCategory(String primaryCategory) {
+        this.primaryCategory = primaryCategory;
+    }
+
+    public List<String> getSkills() {
+        return skills;
+    }
+
+    public void setSkills(List<String> skills) {
+        this.skills = skills;
+    }
+
+    public BigDecimal getHourlyRate() {
+        return hourlyRate;
+    }
+
+    public void setHourlyRate(BigDecimal hourlyRate) {
+        this.hourlyRate = hourlyRate;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
+    public Double getAverageRating() {
+        return averageRating;
+    }
+
+    public void setAverageRating(Double averageRating) {
+        this.averageRating = averageRating;
+    }
+
+    public Integer getReviewCount() {
+        return reviewCount;
+    }
+
+    public void setReviewCount(Integer reviewCount) {
+        this.reviewCount = reviewCount;
+    }
+
+    public Long getCompletedProjects() {
+        return completedProjects;
+    }
+
+    public void setCompletedProjects(Long completedProjects) {
+        this.completedProjects = completedProjects;
     }
 
     public LocalDateTime getCreatedAt() {

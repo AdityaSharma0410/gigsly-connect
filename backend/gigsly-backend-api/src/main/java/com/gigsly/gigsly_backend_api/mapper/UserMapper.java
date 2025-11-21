@@ -4,6 +4,11 @@ import com.gigsly.gigsly_backend_api.dto.user.UserRequest;
 import com.gigsly.gigsly_backend_api.dto.user.UserResponse;
 import com.gigsly.gigsly_backend_api.model.User;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
 public final class UserMapper {
 
     private UserMapper() {
@@ -18,6 +23,10 @@ public final class UserMapper {
         user.setRole(request.getRole());
         user.setBio(request.getBio());
         user.setProfilePictureUrl(request.getProfilePictureUrl());
+        user.setPrimaryCategory(request.getPrimaryCategory());
+        user.setSkills(joinSkills(request.getSkills()));
+        user.setHourlyRate(request.getHourlyRate());
+        user.setLocation(request.getLocation());
         return user;
     }
 
@@ -35,9 +44,33 @@ public final class UserMapper {
         response.setActive(user.getIsActive());
         response.setBio(user.getBio());
         response.setProfilePictureUrl(user.getProfilePictureUrl());
+        response.setPrimaryCategory(user.getPrimaryCategory());
+        response.setSkills(splitSkills(user.getSkills()));
+        response.setHourlyRate(user.getHourlyRate());
+        response.setLocation(user.getLocation());
         response.setCreatedAt(user.getCreatedAt());
         response.setUpdatedAt(user.getUpdatedAt());
         return response;
+    }
+
+    private static String joinSkills(List<String> skills) {
+        if (skills == null || skills.isEmpty()) {
+            return null;
+        }
+        return skills.stream()
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.joining(","));
+    }
+
+    private static List<String> splitSkills(String skills) {
+        if (skills == null || skills.isBlank()) {
+            return Collections.emptyList();
+        }
+        return Arrays.stream(skills.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
     }
 }
 

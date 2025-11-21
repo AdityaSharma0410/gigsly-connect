@@ -1,80 +1,90 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-
-interface User {
-  id: string;
-  email: string;
-  fullName: string;
-  role: 'client' | 'professional';
-}
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import api from '@/lib/api';
+import { authStorage } from '@/lib/auth-storage';
+import type { ApiUser, AuthResponse, UserRole } from '@/types/api';
 
 interface AuthContextType {
-  user: User | null;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, fullName: string, role: 'client' | 'professional') => Promise<void>;
-  logout: () => void;
+  user: ApiUser | null;
+  token: string | null;
+  loading: boolean;
   isAuthenticated: boolean;
+  login: (email: string, password: string) => Promise<ApiUser>;
+  signup: (payload: { fullName: string; email: string; password: string; role: UserRole }) => Promise<ApiUser>;
+  logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock user database
-const mockUsers = [
-  { id: '1', email: 'client@test.com', password: 'password', fullName: 'Test Client', role: 'client' as const },
-  { id: '2', email: 'pro@test.com', password: 'password', fullName: 'Test Professional', role: 'professional' as const },
-];
+const storeSession = (data: AuthResponse, setUser: (user: ApiUser) => void, setToken: (token: string) => void) => {
+  authStorage.setToken(data.token);
+  authStorage.setUser(data.user);
+  setToken(data.token);
+  setUser(data.user);
+};
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<ApiUser | null>(() => authStorage.getUser());
+  const [token, setToken] = useState<string | null>(() => authStorage.getToken());
+  const [loading, setLoading] = useState(true);
+
+  const refreshUser = useCallback(async () => {
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+    try {
+      const { data } = await api.get<ApiUser>('/auth/me');
+      setUser(data);
+      authStorage.setUser(data);
+    } catch {
+      authStorage.clear();
+      setUser(null);
+      setToken(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
 
   useEffect(() => {
-    // Check for stored session
-    const storedUser = localStorage.getItem('gigsly_user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+    if (!token) {
+      setLoading(false);
+      return;
     }
-  }, []);
+    refreshUser();
+  }, [token, refreshUser]);
 
   const login = async (email: string, password: string) => {
-    // Mock API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const foundUser = mockUsers.find(u => u.email === email && u.password === password);
-    if (!foundUser) {
-      throw new Error('Invalid credentials');
-    }
-
-    const { password: _, ...userWithoutPassword } = foundUser;
-    setUser(userWithoutPassword);
-    localStorage.setItem('gigsly_user', JSON.stringify(userWithoutPassword));
+    const { data } = await api.post<AuthResponse>('/auth/login', { email, password });
+    storeSession(data, setUser, setToken);
+    return data.user;
   };
 
-  const signup = async (email: string, password: string, fullName: string, role: 'client' | 'professional') => {
-    // Mock API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    if (mockUsers.some(u => u.email === email)) {
-      throw new Error('Email already exists');
-    }
-
-    const newUser = {
-      id: String(mockUsers.length + 1),
-      email,
-      fullName,
-      role,
-    };
-
-    mockUsers.push({ ...newUser, password });
-    setUser(newUser);
-    localStorage.setItem('gigsly_user', JSON.stringify(newUser));
+  const signup = async (payload: { fullName: string; email: string; password: string; role: UserRole }) => {
+    const { data } = await api.post<AuthResponse>('/auth/signup', payload);
+    storeSession(data, setUser, setToken);
+    return data.user;
   };
 
   const logout = () => {
+    authStorage.clear();
     setUser(null);
-    localStorage.removeItem('gigsly_user');
+    setToken(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        loading,
+        isAuthenticated: !!user,
+        login,
+        signup,
+        logout,
+        refreshUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

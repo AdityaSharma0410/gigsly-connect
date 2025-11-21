@@ -26,13 +26,16 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
+    private final CurrentUserService currentUserService;
 
     public ReviewService(ReviewRepository reviewRepository,
                          TaskRepository taskRepository,
-                         UserRepository userRepository) {
+                         UserRepository userRepository,
+                         CurrentUserService currentUserService) {
         this.reviewRepository = reviewRepository;
         this.taskRepository = taskRepository;
         this.userRepository = userRepository;
+        this.currentUserService = currentUserService;
     }
 
     @Transactional
@@ -40,9 +43,7 @@ public class ReviewService {
         Long taskId = Objects.requireNonNull(request.getTaskId(), "Task id is required");
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found with id " + taskId));
-        Long reviewerId = Objects.requireNonNull(request.getReviewerId(), "Reviewer id is required");
-        User reviewer = userRepository.findById(reviewerId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + reviewerId));
+        User reviewer = currentUserService.getCurrentUser();
         Long revieweeId = Objects.requireNonNull(request.getRevieweeId(), "Reviewee id is required");
         User reviewee = userRepository.findById(revieweeId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + revieweeId));

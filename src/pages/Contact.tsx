@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
 import { Mail, Phone, MapPin } from "lucide-react";
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import api from "@/lib/api";
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -18,26 +19,49 @@ const Contact = () => {
     queryType: "",
     message: ""
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Form validation
     if (!formData.name || !formData.mobile || !formData.email || !formData.queryType || !formData.message) {
-      toast.error("Please fill all fields");
+      toast({
+        title: "Missing information",
+        description: "Please fill all fields before submitting.",
+        variant: "destructive",
+      });
       return;
     }
     
-    // Here you would send the form data to your backend
-    toast.success("Message sent successfully! We'll get back to you soon.");
-    
-    // Reset form
-    setFormData({
-      name: "",
-      mobile: "",
-      email: "",
-      queryType: "",
-      message: ""
-    });
+    setIsSubmitting(true);
+    try {
+      await api.post("/contact-queries", {
+        name: formData.name,
+        mobile: formData.mobile,
+        email: formData.email,
+        queryType: formData.queryType,
+        message: formData.message,
+      });
+      toast({
+        title: "Message sent successfully!",
+        description: "We'll get back to you soon.",
+      });
+      setFormData({
+        name: "",
+        mobile: "",
+        email: "",
+        queryType: "",
+        message: ""
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to send message",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -158,8 +182,9 @@ const Contact = () => {
                   type="submit" 
                   size="lg" 
                   className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white"
+                  disabled={isSubmitting}
                 >
-                  Send Message
+                  {isSubmitting ? "Sending..." : "Send Message"}
                 </Button>
               </form>
             </CardContent>

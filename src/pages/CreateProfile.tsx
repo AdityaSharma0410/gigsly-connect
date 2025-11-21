@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Card, CardContent } from '@/components/ui/card';
@@ -6,15 +7,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { X } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/lib/api';
+import type { CategoryResponse } from '@/types/api';
 
 const CreateProfile = () => {
+  const { user, refreshUser } = useAuth();
   const { toast } = useToast();
   const [skills, setSkills] = useState<string[]>([]);
   const [currentSkill, setCurrentSkill] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     category: '',
     hourlyRate: '',
@@ -23,9 +29,31 @@ const CreateProfile = () => {
     phone: '',
   });
 
+  const { data: categories } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const { data } = await api.get<CategoryResponse[]>('/categories');
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        category: user.primaryCategory ?? '',
+        hourlyRate: user.hourlyRate ? String(user.hourlyRate) : '',
+        bio: user.bio ?? '',
+        location: user.location ?? '',
+        phone: user.mobile ?? '',
+      });
+      setSkills(user.skills ?? []);
+    }
+  }, [user]);
+
   const addSkill = () => {
-    if (currentSkill && !skills.includes(currentSkill)) {
-      setSkills([...skills, currentSkill]);
+    const value = currentSkill.trim();
+    if (value && !skills.includes(value)) {
+      setSkills([...skills, value]);
       setCurrentSkill('');
     }
   };
@@ -34,40 +62,73 @@ const CreateProfile = () => {
     setSkills(skills.filter(s => s !== skill));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: 'Profile Created Successfully!',
-      description: 'You can now start applying for tasks.',
-    });
+    if (user?.role !== 'PROFESSIONAL') {
+      toast({
+        title: 'Professionals only',
+        description: 'Switch to a professional account to update your profile.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await api.put('/users/me/profile', {
+        primaryCategory: formData.category,
+        skills,
+        hourlyRate: Number(formData.hourlyRate),
+        bio: formData.bio,
+        location: formData.location,
+        phone: formData.phone,
+      });
+      await refreshUser();
+      toast({
+        title: 'Profile Updated',
+        description: 'Your professional profile has been saved.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Update failed',
+        description: error instanceof Error ? error.message : 'Please try again',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <section className="pt-32 pb-20 px-6">
+      <section className="flex-1 pt-32 pb-20 px-6">
         <div className="container mx-auto max-w-2xl">
           <Card className="glass-card border-0 animate-scale-in">
             <CardContent className="p-8">
-              <h1 className="text-3xl font-bold mb-2">Create Professional Profile</h1>
+              <h1 className="text-3xl font-bold mb-2">Professional Profile</h1>
               <p className="text-muted-foreground mb-8">
-                Showcase your skills and start earning
+                Showcase your skills and increase your chances of getting hired
               </p>
               
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="category">Primary Category</Label>
-                  <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                  <Select 
+                    value={formData.category} 
+                    onValueChange={(value) => setFormData({ ...formData, category: value })}
+                    disabled={user?.role !== 'PROFESSIONAL'}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select your expertise" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="web-dev">Web Development</SelectItem>
-                      <SelectItem value="video">Video Editing</SelectItem>
-                      <SelectItem value="tutoring">Tutoring</SelectItem>
-                      <SelectItem value="software">Software Development</SelectItem>
-                      <SelectItem value="writing">Content Writing</SelectItem>
+                      {categories?.map((category) => (
+                        <SelectItem key={category.id} value={category.name}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -80,9 +141,12 @@ const CreateProfile = () => {
                       placeholder="Add a skill"
                       value={currentSkill}
                       onChange={(e) => setCurrentSkill(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
+                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
+                      disabled={user?.role !== 'PROFESSIONAL'}
                     />
-                    <Button type="button" onClick={addSkill}>Add</Button>
+                    <Button type="button" onClick={addSkill} disabled={user?.role !== 'PROFESSIONAL'}>
+                      Add
+                    </Button>
                   </div>
                   <div className="flex flex-wrap gap-2 mt-2">
                     {skills.map((skill) => (
@@ -106,6 +170,7 @@ const CreateProfile = () => {
                     value={formData.hourlyRate}
                     onChange={(e) => setFormData({ ...formData, hourlyRate: e.target.value })}
                     required
+                    disabled={user?.role !== 'PROFESSIONAL'}
                   />
                 </div>
 
@@ -118,6 +183,7 @@ const CreateProfile = () => {
                     value={formData.bio}
                     onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                     required
+                    disabled={user?.role !== 'PROFESSIONAL'}
                   />
                 </div>
 
@@ -130,6 +196,7 @@ const CreateProfile = () => {
                       value={formData.location}
                       onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                       required
+                      disabled={user?.role !== 'PROFESSIONAL'}
                     />
                   </div>
 
@@ -142,12 +209,13 @@ const CreateProfile = () => {
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       required
+                      disabled={user?.role !== 'PROFESSIONAL'}
                     />
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full">
-                  Create Profile
+                <Button type="submit" className="w-full" disabled={user?.role !== 'PROFESSIONAL' || isSubmitting}>
+                  {isSubmitting ? 'Saving...' : 'Save Profile'}
                 </Button>
               </form>
             </CardContent>

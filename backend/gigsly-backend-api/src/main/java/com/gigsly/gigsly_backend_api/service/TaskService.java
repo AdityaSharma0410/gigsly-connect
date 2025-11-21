@@ -29,20 +29,22 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
+    private final CurrentUserService currentUserService;
 
     public TaskService(TaskRepository taskRepository,
                        UserRepository userRepository,
-                       CategoryRepository categoryRepository) {
+                       CategoryRepository categoryRepository,
+                       CurrentUserService currentUserService) {
         this.taskRepository = taskRepository;
         this.userRepository = userRepository;
         this.categoryRepository = categoryRepository;
+        this.currentUserService = currentUserService;
     }
 
     @Transactional
     public TaskResponse createTask(TaskRequest request) {
         validateBudgetRange(request);
-        Long clientId = Objects.requireNonNull(request.getClientId(), "Client id is required");
-        User client = getUser(clientId);
+        User client = currentUserService.getCurrentUser();
         if (client.getRole() != UserRole.CLIENT && client.getRole() != UserRole.ADMIN) {
             throw new BadRequestException("Only clients or admins can post tasks");
         }
@@ -69,6 +71,8 @@ public class TaskService {
             User professional = validateProfessional(assignedProfessionalId);
             task.setAssignedProfessional(professional);
             task.setStatus(TaskStatus.IN_PROGRESS);
+        } else {
+            task.setStatus(TaskStatus.OPEN);
         }
 
         Task saved = taskRepository.save(task);
@@ -79,6 +83,14 @@ public class TaskService {
     public TaskResponse updateStatus(@NonNull Long taskId, TaskStatusUpdateRequest request) {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found with id " + taskId));
+        User current = currentUserService.getCurrentUser();
+        boolean isClient = current.getRole() == UserRole.CLIENT || current.getRole() == UserRole.ADMIN;
+        if (!isClient) {
+            throw new BadRequestException("Only clients or admins can update task status");
+        }
+        if (current.getRole() != UserRole.ADMIN && task.getClient() != null && !task.getClient().getId().equals(current.getId())) {
+            throw new BadRequestException("You are not allowed to update this task");
+        }
 
         TaskStatus newStatus = Objects.requireNonNull(request.getStatus(), "Task status is required");
         if (newStatus == TaskStatus.IN_PROGRESS || newStatus == TaskStatus.COMPLETED) {
@@ -120,6 +132,20 @@ public class TaskService {
                     .collect(Collectors.toList());
         }
 
+        return tasks.stream()
+                .map(TaskMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<TaskResponse> getTasksForCurrentUser() {
+        User current = currentUserService.getCurrentUser();
+        List<Task> tasks;
+        if (current.getRole() == UserRole.CLIENT || current.getRole() == UserRole.ADMIN) {
+            tasks = taskRepository.findByClientId(current.getId());
+        } else {
+            tasks = taskRepository.findByAssignedProfessionalId(current.getId());
+        }
         return tasks.stream()
                 .map(TaskMapper::toResponse)
                 .collect(Collectors.toList());

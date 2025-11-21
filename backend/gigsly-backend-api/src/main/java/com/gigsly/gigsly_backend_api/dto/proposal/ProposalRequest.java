@@ -11,9 +11,6 @@ public class ProposalRequest {
     @NotNull(message = "Task id is required")
     private Long taskId;
 
-    @NotNull(message = "Professional id is required")
-    private Long professionalId;
-
     @NotBlank(message = "Proposal message is required")
     private String message;
 
@@ -28,14 +25,6 @@ public class ProposalRequest {
 
     public void setTaskId(Long taskId) {
         this.taskId = taskId;
-    }
-
-    public Long getProfessionalId() {
-        return professionalId;
-    }
-
-    public void setProfessionalId(Long professionalId) {
-        this.professionalId = professionalId;
     }
 
     public String getMessage() {

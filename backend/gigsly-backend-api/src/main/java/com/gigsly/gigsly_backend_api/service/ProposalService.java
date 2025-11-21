@@ -15,7 +15,6 @@ import com.gigsly.gigsly_backend_api.model.User;
 import com.gigsly.gigsly_backend_api.model.UserRole;
 import com.gigsly.gigsly_backend_api.repository.ProposalRepository;
 import com.gigsly.gigsly_backend_api.repository.TaskRepository;
-import com.gigsly.gigsly_backend_api.repository.UserRepository;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,14 +29,14 @@ public class ProposalService {
 
     private final ProposalRepository proposalRepository;
     private final TaskRepository taskRepository;
-    private final UserRepository userRepository;
+    private final CurrentUserService currentUserService;
 
     public ProposalService(ProposalRepository proposalRepository,
                            TaskRepository taskRepository,
-                           UserRepository userRepository) {
+                           CurrentUserService currentUserService) {
         this.proposalRepository = proposalRepository;
         this.taskRepository = taskRepository;
-        this.userRepository = userRepository;
+        this.currentUserService = currentUserService;
     }
 
     @Transactional
@@ -48,9 +47,7 @@ public class ProposalService {
         if (task.getStatus() != TaskStatus.OPEN) {
             throw new BadRequestException("Cannot submit proposal to task that is not open");
         }
-        Long professionalId = Objects.requireNonNull(request.getProfessionalId(), "Professional id is required");
-        User professional = userRepository.findById(professionalId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + professionalId));
+        User professional = currentUserService.getCurrentUser();
         if (professional.getRole() != UserRole.PROFESSIONAL) {
             throw new BadRequestException("Only professionals can submit proposals");
         }
@@ -76,6 +73,12 @@ public class ProposalService {
     public ProposalResponse updateStatus(@NonNull Long proposalId, ProposalStatusUpdateRequest request) {
         Proposal proposal = proposalRepository.findById(proposalId)
                 .orElseThrow(() -> new ResourceNotFoundException("Proposal not found with id " + proposalId));
+        User current = currentUserService.getCurrentUser();
+        if ((current.getRole() != UserRole.CLIENT && current.getRole() != UserRole.ADMIN)
+                || (current.getRole() == UserRole.CLIENT && proposal.getTask().getClient() != null
+                && !proposal.getTask().getClient().getId().equals(current.getId()))) {
+            throw new BadRequestException("Only the task owner can update proposal status");
+        }
         ProposalStatus newStatus = Objects.requireNonNull(request.getStatus(), "Proposal status is required");
         if (newStatus == ProposalStatus.ACCEPTED) {
             proposal.setAcceptedAt(LocalDateTime.now());
@@ -114,6 +117,39 @@ public class ProposalService {
             proposals = proposalRepository.findAll();
         }
         return proposals.stream()
+                .map(ProposalMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProposalResponse> getProposalsForCurrentUser() {
+        User current = currentUserService.getCurrentUser();
+        if (current.getRole() == UserRole.PROFESSIONAL) {
+            return proposalRepository.findByProfessionalId(current.getId()).stream()
+                    .map(ProposalMapper::toResponse)
+                    .collect(Collectors.toList());
+        }
+        if (current.getRole() == UserRole.CLIENT || current.getRole() == UserRole.ADMIN) {
+            List<Long> taskIds = taskRepository.findByClientId(current.getId()).stream()
+                    .map(Task::getId)
+                    .collect(Collectors.toList());
+            return taskIds.stream()
+                    .flatMap(taskId -> proposalRepository.findByTaskId(taskId).stream())
+                    .map(ProposalMapper::toResponse)
+                    .collect(Collectors.toList());
+        }
+        return List.of();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProposalResponse> getProposalsForTaskOwnedByCurrentUser(@NonNull Long taskId) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found with id " + taskId));
+        User current = currentUserService.getCurrentUser();
+        if (current.getRole() != UserRole.ADMIN && task.getClient() != null && !task.getClient().getId().equals(current.getId())) {
+            throw new BadRequestException("You are not allowed to view proposals for this task");
+        }
+        return proposalRepository.findByTaskId(taskId).stream()
                 .map(ProposalMapper::toResponse)
                 .collect(Collectors.toList());
     }

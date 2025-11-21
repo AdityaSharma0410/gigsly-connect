@@ -16,9 +16,6 @@ public class TaskRequest {
     @NotBlank(message = "Description is required")
     private String description;
 
-    @NotNull(message = "Client id is required")
-    private Long clientId;
-
     @NotNull(message = "Category id is required")
     private Long categoryId;
 
@@ -55,14 +52,6 @@ public class TaskRequest {
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public Long getClientId() {
-        return clientId;
-    }
-
-    public void setClientId(Long clientId) {
-        this.clientId = clientId;
     }
 
     public Long getCategoryId() {

@@ -49,5 +49,15 @@ public class ProposalController {
                                                @RequestParam(value = "professionalId", required = false) Long professionalId) {
         return proposalService.getProposals(taskId, professionalId);
     }
+
+    @GetMapping("/mine")
+    public List<ProposalResponse> getMyProposals() {
+        return proposalService.getProposalsForCurrentUser();
+    }
+
+    @GetMapping("/task/{taskId}")
+    public List<ProposalResponse> getProposalsForTask(@PathVariable @NonNull Long taskId) {
+        return proposalService.getProposalsForTaskOwnedByCurrentUser(taskId);
+    }
 }
 

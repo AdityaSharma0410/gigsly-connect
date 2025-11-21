@@ -51,5 +51,10 @@ public class TaskController {
                                         @RequestParam(value = "clientId", required = false) Long clientId) {
         return taskService.getTasks(status, categoryId, clientId);
     }
+
+    @GetMapping("/mine")
+    public List<TaskResponse> myTasks() {
+        return taskService.getTasksForCurrentUser();
+    }
 }
 

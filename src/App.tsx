@@ -15,6 +15,8 @@ import PostTask from "./pages/PostTask";
 import CreateProfile from "./pages/CreateProfile";
 import BrowseTasks from "./pages/BrowseTasks";
 import GiveFeedback from "./pages/GiveFeedback";
+import TaskDashboard from "./pages/TaskDashboard";
+import MyProposals from "./pages/MyProposals";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +39,8 @@ const App = () => (
             <Route path="/create-profile" element={<ProtectedRoute><CreateProfile /></ProtectedRoute>} />
             <Route path="/find-work" element={<ProtectedRoute><BrowseTasks /></ProtectedRoute>} />
             <Route path="/give-feedback" element={<ProtectedRoute><GiveFeedback /></ProtectedRoute>} />
+            <Route path="/dashboard/tasks" element={<ProtectedRoute><TaskDashboard /></ProtectedRoute>} />
+            <Route path="/dashboard/proposals" element={<ProtectedRoute><MyProposals /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -9,9 +9,6 @@ public class ReviewRequest {
     @NotNull(message = "Task id is required")
     private Long taskId;
 
-    @NotNull(message = "Reviewer id is required")
-    private Long reviewerId;
-
     @NotNull(message = "Reviewee id is required")
     private Long revieweeId;
 
@@ -28,14 +25,6 @@ public class ReviewRequest {
 
     public void setTaskId(Long taskId) {
         this.taskId = taskId;
-    }
-
-    public Long getReviewerId() {
-        return reviewerId;
-    }
-
-    public void setReviewerId(Long reviewerId) {
-        this.reviewerId = reviewerId;
     }
 
     public Long getRevieweeId() {

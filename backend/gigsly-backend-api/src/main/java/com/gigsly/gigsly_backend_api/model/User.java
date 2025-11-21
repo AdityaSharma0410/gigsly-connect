@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -36,6 +37,18 @@ public class User {
 
     @Column(length = 15)
     private String mobile;
+
+    @Column(name = "primary_category", length = 100)
+    private String primaryCategory;
+
+    @Column(columnDefinition = "TEXT")
+    private String skills; // comma separated
+
+    @Column(name = "hourly_rate", precision = 10, scale = 2)
+    private BigDecimal hourlyRate;
+
+    @Column(name = "location", length = 150)
+    private String location;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -124,6 +137,38 @@ public class User {
 
     public void setMobile(String mobile) {
         this.mobile = mobile;
+    }
+
+    public String getPrimaryCategory() {
+        return primaryCategory;
+    }
+
+    public void setPrimaryCategory(String primaryCategory) {
+        this.primaryCategory = primaryCategory;
+    }
+
+    public String getSkills() {
+        return skills;
+    }
+
+    public void setSkills(String skills) {
+        this.skills = skills;
+    }
+
+    public BigDecimal getHourlyRate() {
+        return hourlyRate;
+    }
+
+    public void setHourlyRate(BigDecimal hourlyRate) {
+        this.hourlyRate = hourlyRate;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
     }
 
     public UserRole getRole() {

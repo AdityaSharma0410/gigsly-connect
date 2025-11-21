@@ -5,6 +5,9 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+import java.math.BigDecimal;
+import java.util.List;
+
 public class UserRequest {
 
     @NotBlank(message = "Full name is required")
@@ -25,6 +28,14 @@ public class UserRequest {
     private String bio;
 
     private String profilePictureUrl;
+
+    private String primaryCategory;
+
+    private List<String> skills;
+
+    private BigDecimal hourlyRate;
+
+    private String location;
 
     public String getFullName() {
         return fullName;
@@ -81,5 +92,36 @@ public class UserRequest {
     public void setProfilePictureUrl(String profilePictureUrl) {
         this.profilePictureUrl = profilePictureUrl;
     }
-}
 
+    public String getPrimaryCategory() {
+        return primaryCategory;
+    }
+
+    public void setPrimaryCategory(String primaryCategory) {
+        this.primaryCategory = primaryCategory;
+    }
+
+    public List<String> getSkills() {
+        return skills;
+    }
+
+    public void setSkills(List<String> skills) {
+        this.skills = skills;
+    }
+
+    public BigDecimal getHourlyRate() {
+        return hourlyRate;
+    }
+
+    public void setHourlyRate(BigDecimal hourlyRate) {
+        this.hourlyRate = hourlyRate;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
+}
