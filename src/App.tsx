@@ -14,6 +14,7 @@ import Professionals from "./pages/Professionals";
 import PostTask from "./pages/PostTask";
 import CreateProfile from "./pages/CreateProfile";
 import BrowseTasks from "./pages/BrowseTasks";
+import GiveFeedback from "./pages/GiveFeedback";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/post-task" element={<ProtectedRoute><PostTask /></ProtectedRoute>} />
             <Route path="/create-profile" element={<ProtectedRoute><CreateProfile /></ProtectedRoute>} />
             <Route path="/find-work" element={<ProtectedRoute><BrowseTasks /></ProtectedRoute>} />
+            <Route path="/give-feedback" element={<ProtectedRoute><GiveFeedback /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

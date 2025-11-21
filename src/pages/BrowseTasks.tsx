@@ -4,7 +4,12 @@ import Footer from '@/components/Footer';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Calendar, DollarSign, Briefcase } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface Task {
   id: string;
@@ -74,10 +79,39 @@ const categories = ['All', 'Web Development', 'Video Editing', 'Tutoring', 'Soft
 
 const BrowseTasks = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [proposalMessage, setProposalMessage] = useState('');
+  const [proposedAmount, setProposedAmount] = useState('');
+  const [estimatedDuration, setEstimatedDuration] = useState('');
+  const { toast } = useToast();
 
   const filteredTasks = selectedCategory === 'All' 
     ? mockTasks 
     : mockTasks.filter(t => t.category === selectedCategory);
+
+  const handleApply = (task: Task) => {
+    setSelectedTask(task);
+    setProposalMessage('');
+    setProposedAmount('');
+    setEstimatedDuration('');
+  };
+
+  const handleSubmitProposal = () => {
+    if (!proposalMessage || !proposedAmount || !estimatedDuration) {
+      toast({
+        title: 'Error',
+        description: 'Please fill in all fields',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    toast({
+      title: 'Proposal Submitted!',
+      description: `Your proposal for "${selectedTask?.title}" has been submitted successfully.`,
+    });
+    setSelectedTask(null);
+  };
 
   return (
     <div className="min-h-screen">
@@ -141,13 +175,79 @@ const BrowseTasks = () => {
                     </div>
                   </div>
 
-                  <Button className="w-full">Apply for This Task</Button>
+                  <Button className="w-full" onClick={() => handleApply(task)}>
+                    Apply for This Task
+                  </Button>
                 </CardContent>
               </Card>
             ))}
           </div>
         </div>
       </section>
+
+      <Dialog open={!!selectedTask} onOpenChange={() => setSelectedTask(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Apply for Task</DialogTitle>
+            <DialogDescription>
+              Submit your proposal for "{selectedTask?.title}"
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="message">Cover Letter / Proposal Message</Label>
+              <Textarea
+                id="message"
+                placeholder="Explain why you're the best fit for this task..."
+                value={proposalMessage}
+                onChange={(e) => setProposalMessage(e.target.value)}
+                rows={6}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="amount">Proposed Amount (₹)</Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  placeholder="15000"
+                  value={proposedAmount}
+                  onChange={(e) => setProposedAmount(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="duration">Estimated Duration (days)</Label>
+                <Input
+                  id="duration"
+                  type="number"
+                  placeholder="7"
+                  value={estimatedDuration}
+                  onChange={(e) => setEstimatedDuration(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => setSelectedTask(null)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                className="flex-1"
+                onClick={handleSubmitProposal}
+              >
+                Submit Proposal
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Footer />
     </div>

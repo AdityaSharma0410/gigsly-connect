@@ -63,13 +63,6 @@ const Index = () => {
       icon: Search,
       buttonText: "Browse Now",
       buttonLink: "/browse"
-    },
-    {
-      title: "Get Proposals",
-      description: "Receive competitive bids and choose the best fit",
-      icon: CheckCircle,
-      buttonText: "Learn More",
-      buttonLink: "/how-it-works"
     }
   ];
 
@@ -176,7 +169,12 @@ const Index = () => {
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {services.map((service, index) => (
-              <div key={service.title} style={{ animationDelay: `${index * 0.1}s` }}>
+              <div 
+                key={service.title} 
+                style={{ animationDelay: `${index * 0.1}s` }}
+                onClick={() => navigate(`/browse?category=${encodeURIComponent(service.title)}`)}
+                className="cursor-pointer"
+              >
                 <ServiceCard {...service} />
               </div>
             ))}
@@ -194,7 +192,7 @@ const Index = () => {
           
           <div className="mb-16">
             <h3 className="text-2xl font-bold text-center mb-8 text-primary">For Hiring</h3>
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
               {hiringSteps.map((step, index) => (
                 <HowItWorksCard key={step.title} {...step} index={index} />
               ))}
