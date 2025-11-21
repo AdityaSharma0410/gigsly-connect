@@ -55,15 +55,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [token, refreshUser]);
 
   const login = async (email: string, password: string) => {
-    const { data } = await api.post<AuthResponse>('/auth/login', { email, password });
-    storeSession(data, setUser, setToken);
-    return data.user;
+    try {
+      const { data } = await api.post<AuthResponse>('/auth/login', { email, password });
+      storeSession(data, setUser, setToken);
+      return data.user;
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || error?.message || 'Login failed. Please check your credentials.';
+      throw new Error(errorMessage);
+    }
   };
 
   const signup = async (payload: { fullName: string; email: string; password: string; role: UserRole }) => {
-    const { data } = await api.post<AuthResponse>('/auth/signup', payload);
-    storeSession(data, setUser, setToken);
-    return data.user;
+    try {
+      const { data } = await api.post<AuthResponse>('/auth/signup', payload);
+      storeSession(data, setUser, setToken);
+      return data.user;
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || error?.message || 'Signup failed. Please try again.';
+      throw new Error(errorMessage);
+    }
   };
 
   const logout = () => {

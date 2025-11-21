@@ -3,6 +3,7 @@ package com.gigsly.gigsly_backend_api.service;
 import com.gigsly.gigsly_backend_api.dto.user.ProfessionalProfileRequest;
 import com.gigsly.gigsly_backend_api.dto.user.UserRequest;
 import com.gigsly.gigsly_backend_api.dto.user.UserResponse;
+import com.gigsly.gigsly_backend_api.exception.BadRequestException;
 import com.gigsly.gigsly_backend_api.exception.ConflictException;
 import com.gigsly.gigsly_backend_api.exception.ResourceNotFoundException;
 import com.gigsly.gigsly_backend_api.mapper.UserMapper;
@@ -44,7 +45,11 @@ public class UserService {
 
     @Transactional
     public UserResponse createUser(UserRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
+        String normalizedEmail = request.getEmail() != null ? request.getEmail().trim().toLowerCase() : null;
+        if (normalizedEmail == null || normalizedEmail.isBlank()) {
+            throw new BadRequestException("Email is required");
+        }
+        if (userRepository.existsByEmail(normalizedEmail)) {
             throw new ConflictException("Email already in use");
         }
         User user = Objects.requireNonNull(UserMapper.toEntity(request), "Unable to create user entity");

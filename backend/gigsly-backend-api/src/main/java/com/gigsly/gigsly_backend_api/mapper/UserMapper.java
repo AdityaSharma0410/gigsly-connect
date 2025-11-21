@@ -16,10 +16,10 @@ public final class UserMapper {
 
     public static User toEntity(UserRequest request) {
         User user = new User();
-        user.setFullName(request.getFullName());
-        user.setEmail(request.getEmail());
+        user.setFullName(request.getFullName() != null ? request.getFullName().trim() : null);
+        user.setEmail(request.getEmail() != null ? request.getEmail().trim().toLowerCase() : null);
         user.setPassword(request.getPassword());
-        user.setMobile(request.getMobile());
+        user.setMobile(request.getMobile() != null ? request.getMobile().trim() : null);
         user.setRole(request.getRole());
         user.setBio(request.getBio());
         user.setProfilePictureUrl(request.getProfilePictureUrl());

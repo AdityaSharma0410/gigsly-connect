@@ -40,7 +40,26 @@ const Signup = () => {
     setIsLoading(true);
     
     try {
-      const user = await signup({ email, password, fullName, role });
+      // Normalize email (trim and lowercase)
+      const normalizedEmail = email.trim().toLowerCase();
+      const normalizedFullName = fullName.trim();
+      
+      if (!normalizedEmail || !normalizedFullName || !password) {
+        toast({
+          title: 'Signup Failed',
+          description: 'Please fill in all required fields',
+          variant: 'destructive',
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      const user = await signup({ 
+        email: normalizedEmail, 
+        password, 
+        fullName: normalizedFullName, 
+        role 
+      });
       toast({
         title: 'Account Created!',
         description: `Welcome to Gigsly, ${user.fullName}`,
@@ -51,9 +70,12 @@ const Signup = () => {
         navigate('/post-task', { replace: true });
       }
     } catch (error) {
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Please try again';
       toast({
         title: 'Signup Failed',
-        description: error instanceof Error ? error.message : 'Please try again',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
