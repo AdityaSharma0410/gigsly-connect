@@ -72,6 +72,30 @@ const CreateProfile = () => {
       });
       return;
     }
+    if (!formData.category) {
+      toast({
+        title: 'Category required',
+        description: 'Please select your primary category.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (!categories || categories.length === 0) {
+      toast({
+        title: 'Categories not available',
+        description: 'Categories are being loaded. Please wait a moment and try again.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (skills.length === 0) {
+      toast({
+        title: 'Skills required',
+        description: 'Please add at least one skill.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -114,23 +138,35 @@ const CreateProfile = () => {
               
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="category">Primary Category</Label>
+                  <Label htmlFor="category">Primary Category *</Label>
                   <Select 
                     value={formData.category} 
                     onValueChange={(value) => setFormData({ ...formData, category: value })}
-                    disabled={user?.role !== 'PROFESSIONAL'}
+                    disabled={user?.role !== 'PROFESSIONAL' || !categories || categories.length === 0}
+                    required
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select your expertise" />
+                      <SelectValue placeholder={categories && categories.length > 0 ? "Select your expertise" : "Loading categories..."} />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories?.map((category) => (
-                        <SelectItem key={category.id} value={category.name}>
-                          {category.name}
+                      {categories && categories.length > 0 ? (
+                        categories.map((category) => (
+                          <SelectItem key={category.id} value={category.name}>
+                            {category.name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="no-categories" disabled>
+                          No categories available
                         </SelectItem>
-                      ))}
+                      )}
                     </SelectContent>
                   </Select>
+                  {categories && categories.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      Categories are being initialized. Please refresh the page in a moment.
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">

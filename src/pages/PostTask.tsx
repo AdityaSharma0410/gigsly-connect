@@ -51,6 +51,22 @@ const PostTask = () => {
       });
       return;
     }
+    if (!formData.categoryId) {
+      toast({
+        title: 'Category required',
+        description: 'Please select a category for your task.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (!categories || categories.length === 0) {
+      toast({
+        title: 'Categories not available',
+        description: 'Categories are being loaded. Please wait a moment and try again.',
+        variant: 'destructive',
+      });
+      return;
+    }
     setIsSubmitting(true);
     try {
       await api.post('/tasks', {
@@ -123,23 +139,35 @@ const PostTask = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
+                  <Label htmlFor="category">Category *</Label>
                   <Select 
                     value={formData.categoryId} 
                     onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
-                    disabled={disabled}
+                    disabled={disabled || !categories || categories.length === 0}
+                    required
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
+                      <SelectValue placeholder={categories && categories.length > 0 ? "Select a category" : "Loading categories..."} />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories?.map((category) => (
-                        <SelectItem key={category.id} value={String(category.id)}>
-                          {category.name}
+                      {categories && categories.length > 0 ? (
+                        categories.map((category) => (
+                          <SelectItem key={category.id} value={String(category.id)}>
+                            {category.name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="no-categories" disabled>
+                          No categories available
                         </SelectItem>
-                      ))}
+                      )}
                     </SelectContent>
                   </Select>
+                  {categories && categories.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      Categories are being initialized. Please refresh the page in a moment.
+                    </p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
