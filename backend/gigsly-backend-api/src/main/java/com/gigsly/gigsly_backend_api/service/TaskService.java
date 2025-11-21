@@ -164,6 +164,31 @@ public class TaskService {
         return professional;
     }
 
+    @Transactional
+    public TaskResponse assignProfessional(@NonNull Long taskId, @NonNull Long professionalId) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found with id " + taskId));
+        User current = currentUserService.getCurrentUser();
+        boolean isClient = current.getRole() == UserRole.CLIENT || current.getRole() == UserRole.ADMIN;
+        if (!isClient) {
+            throw new BadRequestException("Only clients or admins can assign professionals");
+        }
+        if (current.getRole() != UserRole.ADMIN && task.getClient() != null && !task.getClient().getId().equals(current.getId())) {
+            throw new BadRequestException("You are not allowed to assign professionals to this task");
+        }
+        if (task.getStatus() == TaskStatus.COMPLETED || task.getStatus() == TaskStatus.CANCELLED) {
+            throw new BadRequestException("Cannot assign professional to completed or cancelled task");
+        }
+
+        User professional = validateProfessional(professionalId);
+        task.setAssignedProfessional(professional);
+        if (task.getStatus() == TaskStatus.OPEN) {
+            task.setStatus(TaskStatus.IN_PROGRESS);
+        }
+        Task saved = taskRepository.save(task);
+        return TaskMapper.toResponse(saved);
+    }
+
     private void validateBudgetRange(TaskRequest request) {
         if (request.getBudgetMin() != null && request.getBudgetMax() != null
                 && request.getBudgetMin().compareTo(request.getBudgetMax()) > 0) {

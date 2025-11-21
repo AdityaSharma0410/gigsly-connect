@@ -4,9 +4,11 @@ import Footer from '@/components/Footer';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Star, MapPin } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import type { ProposalResponse, TaskResponse } from '@/types/api';
+import type { ApiUser, ProposalResponse, TaskResponse } from '@/types/api';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -15,6 +17,7 @@ const TaskDashboard = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [expandedTaskId, setExpandedTaskId] = useState<number | null>(null);
+  const [taskToAssign, setTaskToAssign] = useState<number | null>(null);
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['myTasks'],
@@ -67,6 +70,35 @@ const TaskDashboard = () => {
     },
   });
 
+  const { data: professionals = [] } = useQuery({
+    queryKey: ['professionals'],
+    queryFn: async () => {
+      const { data } = await api.get<ApiUser[]>('/users', { params: { role: 'PROFESSIONAL' } });
+      return data;
+    },
+    enabled: !!taskToAssign,
+  });
+
+  const assignProfessional = useMutation({
+    mutationFn: ({ taskId, professionalId }: { taskId: number; professionalId: number }) =>
+      api.post(`/tasks/${taskId}/assign`, { professionalId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['myTasks'] });
+      toast({
+        title: 'Professional Assigned!',
+        description: 'The professional has been assigned to this task.',
+      });
+      setTaskToAssign(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Assignment failed',
+        description: error?.response?.data?.message || error?.message || 'Please try again',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const isClient = user?.role === 'CLIENT' || user?.role === 'ADMIN';
 
   return (
@@ -114,6 +146,14 @@ const TaskDashboard = () => {
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
+                      {task.status !== 'COMPLETED' && !task.assignedProfessionalId && (
+                        <Button
+                          variant="outline"
+                          onClick={() => setTaskToAssign(task.id)}
+                        >
+                          Hire Professional
+                        </Button>
+                      )}
                       {task.status !== 'COMPLETED' && (
                         <Button
                           variant="outline"
@@ -183,6 +223,100 @@ const TaskDashboard = () => {
           )}
         </div>
       </section>
+
+      <Dialog open={!!taskToAssign} onOpenChange={(open) => !open && setTaskToAssign(null)}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Hire a Professional</DialogTitle>
+            <DialogDescription>
+              Select a professional to assign to this task
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {professionals.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">Loading professionals...</p>
+            ) : (
+              <div className="grid gap-4">
+                {professionals.map((professional) => (
+                  <Card key={professional.id} className="cursor-pointer hover:border-primary transition-colors">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h4 className="font-semibold text-lg">{professional.fullName}</h4>
+                            {professional.primaryCategory && (
+                              <Badge variant="outline">{professional.primaryCategory}</Badge>
+                            )}
+                          </div>
+                          
+                          {professional.bio && (
+                            <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                              {professional.bio}
+                            </p>
+                          )}
+
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {(professional.skills ?? []).slice(0, 5).map((skill) => (
+                              <Badge key={skill} variant="secondary" className="text-xs">
+                                {skill}
+                              </Badge>
+                            ))}
+                            {(professional.skills?.length ?? 0) > 5 && (
+                              <Badge variant="secondary" className="text-xs">
+                                +{(professional.skills?.length ?? 0) - 5} more
+                              </Badge>
+                            )}
+                          </div>
+
+                          <div className="flex flex-wrap gap-4 text-sm">
+                            {professional.hourlyRate && (
+                              <span className="font-medium text-primary">
+                                ₹{professional.hourlyRate}/hr
+                              </span>
+                            )}
+                            <div className="flex items-center gap-1">
+                              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                              <span>{professional.averageRating?.toFixed(1) ?? 'New'}</span>
+                              <span className="text-muted-foreground">
+                                ({professional.reviewCount ?? 0} reviews)
+                              </span>
+                            </div>
+                            {professional.location && (
+                              <div className="flex items-center gap-1 text-muted-foreground">
+                                <MapPin className="w-4 h-4" />
+                                <span>{professional.location}</span>
+                              </div>
+                            )}
+                            <span className="text-muted-foreground">
+                              {professional.completedProjects ?? 0} projects completed
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <Button
+                          onClick={() => {
+                            if (taskToAssign) {
+                              assignProfessional.mutate({
+                                taskId: taskToAssign,
+                                professionalId: professional.id,
+                              });
+                            }
+                          }}
+                          disabled={assignProfessional.isPending}
+                        >
+                          {assignProfessional.isPending ? 'Assigning...' : 'Assign'}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Footer />
     </div>
   );

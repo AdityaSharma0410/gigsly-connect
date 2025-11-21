@@ -1,5 +1,6 @@
 package com.gigsly.gigsly_backend_api.controller;
 
+import com.gigsly.gigsly_backend_api.dto.task.AssignProfessionalRequest;
 import com.gigsly.gigsly_backend_api.dto.task.TaskRequest;
 import com.gigsly.gigsly_backend_api.dto.task.TaskResponse;
 import com.gigsly.gigsly_backend_api.dto.task.TaskStatusUpdateRequest;
@@ -55,6 +56,11 @@ public class TaskController {
     @GetMapping("/mine")
     public List<TaskResponse> myTasks() {
         return taskService.getTasksForCurrentUser();
+    }
+
+    @PostMapping("/{id}/assign")
+    public TaskResponse assignProfessional(@PathVariable @NonNull Long id, @Valid @RequestBody AssignProfessionalRequest request) {
+        return taskService.assignProfessional(id, request.getProfessionalId());
     }
 }
 
