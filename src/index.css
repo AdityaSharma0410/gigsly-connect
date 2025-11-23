@@ -117,6 +117,10 @@ All colors MUST be HSL.
     background-image: var(--gradient-mesh);
     background-attachment: fixed;
   }
+
+  #root {
+    animation: fade-in 0.3s ease-out;
+  }
 }
 
 @layer components {
