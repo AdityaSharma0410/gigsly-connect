@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+// Navbar and Footer removed for standalone auth pages
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,7 +50,6 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
       <section className="flex-1 flex items-center justify-center px-6">
         <div className="container mx-auto max-w-md">
           <Card className="glass-card border-0 animate-scale-in">
@@ -103,7 +101,6 @@ const Login = () => {
           </Card>
         </div>
       </section>
-      <Footer />
     </div>
   );
 };
