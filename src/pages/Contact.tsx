@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Mail, Phone, MapPin } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import api from "@/lib/api";
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -32,36 +31,13 @@ const Contact = () => {
       });
       return;
     }
-    
+    // Submit natively to Formspree only. The form element has action and method set.
+    // Using native submit will navigate to Formspree's response page.
     setIsSubmitting(true);
-    try {
-      await api.post("/contact-queries", {
-        name: formData.name,
-        mobile: formData.mobile,
-        email: formData.email,
-        queryType: formData.queryType,
-        message: formData.message,
-      });
-      toast({
-        title: "Message sent successfully!",
-        description: "We'll get back to you soon.",
-      });
-      setFormData({
-        name: "",
-        mobile: "",
-        email: "",
-        queryType: "",
-        message: ""
-      });
-    } catch (error) {
-      toast({
-        title: "Failed to send message",
-        description: error instanceof Error ? error.message : "Please try again",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    const form = e.currentTarget as HTMLFormElement;
+    // Ensure the hidden input for queryType is up-to-date (it is bound to formData)
+    // Then perform native submit so Formspree receives the POST
+    form.submit();
   };
 
   return (
@@ -111,12 +87,13 @@ const Contact = () => {
 
           <Card className="glass-card border-0 animate-scale-in">
             <CardContent className="p-8 md:p-12">
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form action="https://formspree.io/f/xgvbawek" method="POST" onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="name">Full Name</Label>
                     <Input
                       id="name"
+                      name="name"
                       placeholder="John Doe"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -128,6 +105,7 @@ const Contact = () => {
                     <Label htmlFor="mobile">Mobile Number</Label>
                     <Input
                       id="mobile"
+                      name="mobile"
                       type="tel"
                       placeholder="+91 98765 43210"
                       value={formData.mobile}
@@ -141,6 +119,7 @@ const Contact = () => {
                   <Label htmlFor="email">Email Address</Label>
                   <Input
                     id="email"
+                    name="email"
                     type="email"
                     placeholder="john@example.com"
                     value={formData.email}
@@ -164,12 +143,15 @@ const Contact = () => {
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
+                  {/* Hidden input to ensure the custom Select value is included in native form POST */}
+                  <input type="hidden" name="queryType" value={formData.queryType} />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="message">Message</Label>
                   <Textarea
                     id="message"
+                    name="message"
                     placeholder="Tell us how we can help you..."
                     rows={6}
                     value={formData.message}
